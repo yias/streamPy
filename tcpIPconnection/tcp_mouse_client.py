@@ -1,3 +1,7 @@
+# import standard modules 
+import numpy as np
+import argparse
+
 # import modules for socket programming (TCP/IP connection)
 import socket
 import sys
@@ -11,7 +15,7 @@ import time
 import spnav
 
 
-def main():
+def main(args):
 	
 
 	# Create a TCP/IP socket
@@ -19,7 +23,7 @@ def main():
 
 
 	# Connect the socket to the port where the server is listening
-	server_address = ('localhost', 10351)
+	server_address = (args.host, args.port)
 
 	print('connecting to %s port %s', server_address)
 
@@ -28,12 +32,11 @@ def main():
 	# define a header size of the message
 	HEADERSIZE=8
 
-	# define message identifier
+	# new message identifier
 	msg_idf="!&?5"
 
-	msg=[]
-
-	tmp_msg='test_msg'
+	# end-connection identifier
+	ec_id="\ne@c"
 
 	spnav.spnav_open()
 
@@ -48,7 +51,7 @@ def main():
 				msg=[event.translation[0],event.translation[1],event.translation[2]]
 				data=json.dumps({"a": 'translation', "b": msg})
 				msg_len=('{:<'+str(HEADERSIZE)+'}').format(str(sys.getsizeof(data)))
-				msg_id='{:<8}'.format(str(counter))
+				msg_id=('{:<'+str(HEADERSIZE)+'}').format(str(counter))
 				sock.sendall(msg_idf.encode('utf-8')+msg_len.encode('utf-8')+msg_id.encode()+data.encode())
 
 				time_passed=time.time()-startTime
@@ -57,6 +60,7 @@ def main():
 				counter+=1
 		except KeyboardInterrupt:
 			print('closing socket')
+			sock.sendall(ec_id.encode('utf-8'))
 			sock.close()
 			break
 		# finally:
@@ -68,4 +72,21 @@ def main():
 	# sock.close()
 
 if __name__=="__main__":
-	main()
+	__version__='0.1.3'
+
+	parser = argparse.ArgumentParser(description='TCP server for receiving inputs from 3D mouse client')
+
+	parser.add_argument('--host', type=str, help= 'the IP of the server', default='localhost')
+
+	parser.add_argument('--port', type=int, help= 'the port on which the server is listening', default=10351)
+
+	parser.add_argument('--roosnode','--rn', type=bool, help= 'if needed to publish the data to a ros topic', default=False)
+
+	parser.add_argument('--version', '-V', help='show program version', action='store_true')
+
+	args=parser.parse_args()
+
+	if args.version:
+		print('program verions: %s' % __version__)
+		exit()
+	main(args)	
