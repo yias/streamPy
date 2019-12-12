@@ -1,4 +1,4 @@
-# tcpIPconnection
+# Space navigator
 python scripts for receiving data from a 3D space-navigator through a TCP/IP communication.
 The "Object_Recognition" program reads captures pictures from a camera and classifies the pictures according to the user's preferencies. 
 It has been created by the Learning Algorithms and Systems Laboratory (LASA) of EPFL
