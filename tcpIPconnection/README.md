@@ -20,6 +20,7 @@ Please send your feedback or questions to:      iason.batzianoulis@epfl.ch
 $ sudo apt install spacenavd libspnav0 libspnav-dev
 
 2) install the spnav module
+
 $ pip install spnav
 
 or clone and install spnav from source from this link
