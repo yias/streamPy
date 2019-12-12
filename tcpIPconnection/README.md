@@ -21,19 +21,24 @@ $ sudo apt install spacenavd libspnav0 libspnav-dev
 
 2) install the spnav module
 
+```bash
 $ pip install spnav
+```
 
 or clone and install spnav from source from this link
 https://spnav.readthedocs.io/en/latest/
 
 
-----------------------------------
-     running the scripts
-----------------------------------
+## Running the scripts
+
 - running the server
 
+```bash
 $ python tcp_server.py --host "the IP of the host"
+```
 
 - running the mouse client
 
+```bash
 $ python tcp_mouse_client.py --host "the server IP"
+```
