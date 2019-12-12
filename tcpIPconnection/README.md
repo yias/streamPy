@@ -11,8 +11,7 @@ The program uses spnav module to receive events from a 3D space-navigator. See b
 Please send your feedback or questions to:      iason.batzianoulis@epfl.ch
 
 
-       #spnav set-up
-
+#spnav set-up
 
 1) install the spacenavd and libspanv0 modules (pre-requisites for spnav)
 
