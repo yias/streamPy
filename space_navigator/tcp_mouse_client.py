@@ -1,6 +1,7 @@
 # import standard modules 
 import numpy as np
 import argparse
+import hashlib
 
 # import modules for socket programming (TCP/IP connection)
 import socket
@@ -13,6 +14,26 @@ import time
 
 # import module for receiving data from the 3D mouse
 import spnav
+
+def handShake(ssock):
+
+	test_msg="tW#"
+
+	ping_times=np.empty([10,1], dtype=np.float64)
+
+	# echo server 10 times
+	for i in range(10):
+		dcdr=haslib.md5()
+		dcdr.update(test_msg)
+		ckSum=sum(bytearray(dcdr.digest()))
+		chSum_msg=('{:<8}').format(str(ckSum))
+		ssock.sendall((test_msg+i).encode('utf-8')+chSum_msg.encode('utf-8'))
+		t_time=time.time()
+		t_data=ssock.recv(5)
+
+
+	return True
+
 
 
 def main(args):
@@ -28,6 +49,8 @@ def main(args):
 	print('connecting to %s port %s', server_address)
 
 	sock.connect(server_address)
+
+	is_connected=handShake(sock)
 
 	# define a header size of the message
 	HEADERSIZE=8
@@ -52,7 +75,7 @@ def main(args):
 				data=json.dumps({"a": 'translation', "b": msg})
 				msg_len=('{:<'+str(HEADERSIZE)+'}').format(str(sys.getsizeof(data)))
 				msg_id=('{:<'+str(HEADERSIZE)+'}').format(str(counter))
-				sock.sendall(msg_idf.encode('utf-8')+msg_len.encode('utf-8')+msg_id.encode()+data.encode())
+				sock.sendall(msg_idf.encode('utf-8')+msg_len.encode('utf-8')+msg_id.encode('utf-8')+data.encode('utf-8'))
 
 				time_passed=time.time()-startTime
 				print('time ', time_passed, ', translation: ', msg, 'msgID', counter)
