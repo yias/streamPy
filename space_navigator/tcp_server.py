@@ -20,10 +20,17 @@ def calc_checksum(s):
 
 def msgExtractor(msg, hdrSize, endMsgID):
 	msgSize=int(msg[:hdrSize].decode('utf-8'))
-	print('msg size: ', msgSize)
-	tmp_msg=msg[hdrSize:hdrSize+msgSize/]
-	print(tmp_msg)
-	# hashcode=
+	# print('msg size: ', msgSize)
+	tmp_msg=msg[hdrSize:hdrSize+msgSize-sys.getsizeof('')]
+	# print(tmp_msg)
+	hashcode=msg[hdrSize+msgSize-sys.getsizeof(''):-len(endMsgID)]
+	# print(hashcode)
+	hc_check=hashlib.md5()
+	hc_check.update(tmp_msg)
+	if hc_check.hexdigest()==hashcode:
+		return True, tmp_msg
+	else:
+		return False, ''
 
 
 
@@ -35,43 +42,45 @@ def randomString(strlength=10):
 def handShake(conn, strlength):
 
 	ping_times=np.empty([10,1], dtype=np.float64)
+	compute_times=np.empty([10,1], dtype=np.float64)
+	validity_counter=np.empty([10,1], dtype=bool)
 	endMSG="!3tt"
 	HEADERSIZE=4
+	t_time0=0.0
 
-	# echo server 10 times
+	# receive and send random msgs to the client 10 times
 	for i in range(10):
 		msg_full=''
-		# dataT=conn.recv(4)
-		# msg_len=int(dataT.decode('utf-8'))
-		# print('msg length: %s' %msg_len)
 		while (True):
 			dataT=conn.recv(4)
-			# print(msg_full[-4:])
 			msg_full+=dataT
 			if msg_full[-4:].decode('utf-8')==endMSG:
 				break
 		
-		print(msg_full.decode('utf-8'))
-		msgExtractor(msg_full,HEADERSIZE,endMSG)
-		# while (True):
-		# 	data=conn.recv(4)
-		# 	if data.decode('utf-8')==endMSG:
-		# 		break
-		# 	print(data)
-		# 	msg_full+=data
+		# print(msg_full.decode('utf-8'))
+		if t_time0!=0.0:
+			ping_times[i-1]=time.time()-t_time0
+		t_time=time.time()
+		msg_validity, tr_msg = msgExtractor(msg_full,HEADERSIZE,endMSG)
+		validity_counter[i]=msg_validity
 
 		dcdr=hashlib.md5()
 		test_msg=randomString(strlength)
 		dcdr.update(test_msg)
 		chSum=dcdr.hexdigest()
 		msg_len=('{:<'+str(HEADERSIZE)+'}').format(str(sys.getsizeof(test_msg)))
+		compute_times[i]=time.time()-t_time
 		conn.sendall(msg_len.encode('utf-8')+(test_msg).encode('utf-8')+chSum.encode('utf-8')+endMSG.encode('utf-8'))
-		t_time=time.time()
-		# t_data=ssock.recv(4)
+		t_time0=time.time()
 
-
-
-	return True
+	if((1*(validity_counter)).mean()>0.8):
+		print('valid communication established')
+		print('compute times: %s %s %s s' %(compute_times.mean(), u'\u00b1', compute_times.std()))
+		print('ping times:  %s %s %s s' %(ping_times[:9].mean(), u'\u00b1', ping_times[:9].std()))
+		return True
+	else:
+		print('communication is not valid')
+		return False
 
 
 
