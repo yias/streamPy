@@ -1,3 +1,5 @@
+#!/usr/bin/env python2.7
+
 # import standard modules 
 import numpy as np
 import argparse
@@ -13,6 +15,10 @@ import json
 # import modules for theading programming
 import threading
 import time
+
+# import ros modules
+import rospy
+from sensor_msgs.msg import Joy
 
 
 def calc_checksum(s):
@@ -123,6 +129,12 @@ def main(args):
 	# listen for new connections
 	# sock.settimeout(3)
 	sock.listen(6)
+
+	# define ros publisher
+	spaceNav_pub=rospy.Publisher('spacenav/joy', Joy, queue_size=2)
+
+	# start the node
+	rospy.init_node('remoteSpaceNav')
 	
 
 	#Wait for a connection
@@ -140,6 +152,9 @@ def main(args):
 			# check communication validity with a hand-shake protocol
 			conCheck=handShake(connection,10)
 			while(conCheck):
+				# define ros message
+				joy_msg=Joy()
+
 				# retrieve the message identifier. once it is received, compose the message
 				data=connection.recv(BUFFER_SIZE)
 
@@ -160,8 +175,19 @@ def main(args):
 						# if the message is valid, retrieve the data and load them into a json object
 						msg_data=json.loads(tr_msg.decode('utf-8'))
 
+						tr=msg_data.get("translation")
+						rot=msg_data.get("rotation")
 						print('translation: %s' %(msg_data.get("translation")))
 						print('rotation: %s' %(msg_data.get("rotation")))
+						now=rospy.get_rostime()
+						joy_msg.header.stamp.secs=now.secs
+						joy_msg.header.stamp.nsecs=now.nsecs
+						for i in range(3):
+							joy_msg.axes.append(tr[i])
+						for i in range(3):
+							joy_msg.axes.append(rot[i])
+						spaceNav_pub.publish(joy_msg)
+
 
 				if  data.decode('utf-8')==ec_id:
 					# if end-of-communication identifier received, terminate the connection

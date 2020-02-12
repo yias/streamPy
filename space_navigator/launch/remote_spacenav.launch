@@ -1,0 +1,7 @@
+<launch>
+
+	<node pkg="remote_spaceNav" type="tcp_server.py" name="remote_spacenav" output="screen" cwd="node">
+
+	</node>
+
+</launch>
