@@ -31,7 +31,7 @@ def msgExtractor(msg, hdrSize, endMsgID):
 		return True, tmp_msg
 	else:
 		return False, ''
-
+# 
 
 
 def randomString(strlength=10):
@@ -115,6 +115,9 @@ def main(args):
 	# define message identifier
 	msg_idf="!&?5"
 
+	# end-of-message identifier
+	endMSG="!3tt"
+
 	# end-connection identifier
 	ec_id="\ne@c"
 
@@ -136,23 +139,36 @@ def main(args):
 			conCheck=handShake(connection,10)
 			while(True):
 				data=connection.recv(BUFFER_SIZE)
-				# print(type(data))
+				# print(data)
 				if data.decode('utf-8')==msg_idf:
-					print('new msg rcvd')
-					data=connection.recv(HEADERSIZE)
-					msg_len=int(data.decode('utf-8'))
-					print('expecting nb bytes: ', msg_len)
-					data=connection.recv(HEADERSIZE)
-					msg_id=int(data.decode('utf-8'))
-					print('msg id: ',msg_id)
+					# print('new msg rcvd')
+					# data=connection.recv(HEADERSIZE)
+					# msg_len=int(data.decode('utf-8'))
+					# print('expecting nb bytes: ', msg_len)
+					# data=connection.recv(HEADERSIZE)
+					# msg_id=int(data.decode('utf-8'))
+					# print('msg id: ',msg_id)
 					
 					full_msg='';
-					while sys.getsizeof(full_msg)<msg_len:
-						data=connection.recv(BUFFER_SIZE)
-						print(data)
-						full_msg=full_msg+data
-					msg_data=json.loads(full_msg.decode('utf-8'))
-					print('%s: %s' %(msg_data.get("a"),msg_data.get("b")))
+					while (True):
+						dataT=connection.recv(1)
+						# print(dataT)
+						full_msg+=dataT
+						if full_msg[-4:].decode('utf-8')==endMSG:
+							break
+
+					# while sys.getsizeof(full_msg)<msg_len:
+					# 	data=connection.recv(BUFFER_SIZE)
+					# 	print(data)
+					# 	full_msg=full_msg+data
+					# print(full_msg)
+					msg_validity, tr_msg = msgExtractor(full_msg,HEADERSIZE,endMSG)
+					# msg_data=json.loads(full_msg.decode('utf-8'))
+					msg_data=json.loads(tr_msg.decode('utf-8'))
+					# print('%s: %s' %(msg_data.get("a"),msg_data.get("b")))
+					# print('%s: %s' %(msg_data.get("c"),msg_data.get("d")))
+					print('translation: %s' %(msg_data.get("translation")))
+					print('rotation: %s' %(msg_data.get("rotation")))
 				if  data.decode('utf-8')==ec_id:
 					print('Connection terminated by client ', client_address)
 					connection.close()

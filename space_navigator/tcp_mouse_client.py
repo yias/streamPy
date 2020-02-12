@@ -79,29 +79,60 @@ def main(args):
 	# new message identifier
 	msg_idf="!&?5"
 
+	# end-of-message identifier
+	endMSG="!3tt"
+
 	# end-connection identifier
 	ec_id="\ne@c"
+
+	# normalized factor for the inputs of the spacenav in order for the values to be [-1,1]
+	full_scale=512.0
+
+	# The number of polls needed to be done before the device is considered "static"
+	static_count_threshold=30
 
 	spnav.spnav_open()
 
 	startTime=time.time()
 
 	counter=0
+	publish=False
+	zero_counter=0
 
 	while(True):
 		try: 
 			event=spnav.spnav_poll_event()
+			dcdr=hashlib.md5()
+			msg_tr=[0.0,0.0,0.0]
+			msg_rot=[0.0,0.0,0.0]
 			if event is not None:
-				msg=[event.translation[0],event.translation[1],event.translation[2]]
-				data=json.dumps({"a": 'translation', "b": msg})
+				msg_tr=[event.translation[2]/full_scale, -event.translation[0]/full_scale, event.translation[1]/full_scale]
+				msg_rot=[event.rotation[2]/full_scale, -event.rotation[0]/full_scale, event.rotation[1]/full_scale]
+				publish=True
+			else:
+				if zero_counter>static_count_threshold:
+					publish=True
+					zero_counter=0
+				else:
+					zero_counter+=1
+				time.sleep(0.001)
+			if publish:
+				# data=json.dumps({"a": 'translation', "b": msg_tr, "c": 'rotation', "d": msg_rot})
+				data=json.dumps({"translation": msg_tr, "rotation": msg_rot})
+				dcdr.update(data)
+				chSum=dcdr.hexdigest()
+
 				msg_len=('{:<'+str(HEADERSIZE)+'}').format(str(sys.getsizeof(data)))
 				msg_id=('{:<'+str(HEADERSIZE)+'}').format(str(counter))
-				sock.sendall(msg_idf.encode('utf-8')+msg_len.encode('utf-8')+msg_id.encode('utf-8')+data.encode('utf-8'))
+				sock.sendall(msg_idf.encode('utf-8')+msg_len.encode('utf-8')+(data).encode('utf-8')+chSum.encode('utf-8')+endMSG.encode('utf-8'))
+				# sock.sendall(msg_idf.encode('utf-8')+msg_len.encode('utf-8')+msg_id.encode('utf-8')+data.encode('utf-8'))
 
 				time_passed=time.time()-startTime
-				print('time ', time_passed, ', translation: ', msg, 'msgID', counter)
+				print('time ', time_passed, ', translation: ', msg_tr, 'msgID', counter)
 				startTime=time.time()
 				counter+=1
+				publish=False
+
 		except KeyboardInterrupt:
 			print('closing socket')
 			sock.sendall(ec_id.encode('utf-8'))
