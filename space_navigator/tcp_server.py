@@ -20,11 +20,11 @@ def calc_checksum(s):
 
 def msgExtractor(msg, hdrSize, endMsgID):
 	msgSize=int(msg[:hdrSize].decode('utf-8'))
-	# print('msg size: ', msgSize)
+
 	tmp_msg=msg[hdrSize:hdrSize+msgSize-sys.getsizeof('')]
-	# print(tmp_msg)
+
 	hashcode=msg[hdrSize+msgSize-sys.getsizeof(''):-len(endMsgID)]
-	# print(hashcode)
+
 	hc_check=hashlib.md5()
 	hc_check.update(tmp_msg)
 	if hc_check.hexdigest()==hashcode:
@@ -56,8 +56,7 @@ def handShake(conn, strlength):
 			msg_full+=dataT
 			if msg_full[-4:].decode('utf-8')==endMSG:
 				break
-		
-		# print(msg_full.decode('utf-8'))
+
 		if t_time0!=0.0:
 			ping_times[i-1]=time.time()-t_time0
 		t_time=time.time()
@@ -133,55 +132,52 @@ def main(args):
 	while(True):
 		
 		try:
+			# check if any connection inquire exists and accept it
 			connection, client_address = sock.accept()
 			connection_exist=True;
 			print('connection from ', client_address)
+
+			# check communication validity with a hand-shake protocol
 			conCheck=handShake(connection,10)
-			while(True):
+			while(conCheck):
+				# retrieve the message identifier. once it is received, compose the message
 				data=connection.recv(BUFFER_SIZE)
-				# print(data)
+
 				if data.decode('utf-8')==msg_idf:
-					# print('new msg rcvd')
-					# data=connection.recv(HEADERSIZE)
-					# msg_len=int(data.decode('utf-8'))
-					# print('expecting nb bytes: ', msg_len)
-					# data=connection.recv(HEADERSIZE)
-					# msg_id=int(data.decode('utf-8'))
-					# print('msg id: ',msg_id)
 					
+					# receive bytes until the full message is received
 					full_msg='';
 					while (True):
 						dataT=connection.recv(1)
-						# print(dataT)
 						full_msg+=dataT
 						if full_msg[-4:].decode('utf-8')==endMSG:
 							break
 
-					# while sys.getsizeof(full_msg)<msg_len:
-					# 	data=connection.recv(BUFFER_SIZE)
-					# 	print(data)
-					# 	full_msg=full_msg+data
-					# print(full_msg)
+					# extract message
 					msg_validity, tr_msg = msgExtractor(full_msg,HEADERSIZE,endMSG)
-					# msg_data=json.loads(full_msg.decode('utf-8'))
-					msg_data=json.loads(tr_msg.decode('utf-8'))
-					# print('%s: %s' %(msg_data.get("a"),msg_data.get("b")))
-					# print('%s: %s' %(msg_data.get("c"),msg_data.get("d")))
-					print('translation: %s' %(msg_data.get("translation")))
-					print('rotation: %s' %(msg_data.get("rotation")))
+
+					if msg_validity:
+						# if the message is valid, retrieve the data and load them into a json object
+						msg_data=json.loads(tr_msg.decode('utf-8'))
+
+						print('translation: %s' %(msg_data.get("translation")))
+						print('rotation: %s' %(msg_data.get("rotation")))
+
 				if  data.decode('utf-8')==ec_id:
+					# if end-of-communication identifier received, terminate the connection
 					print('Connection terminated by client ', client_address)
 					connection.close()
 					break
-				# if(sock.fileno()==-1):
-				# 	break
+				
 		except KeyboardInterrupt:
+			# if Ctrl+C is pressed in the keyboard, close the connections (if any) and exit
 			if connection_exist:
 				connection.close()
 			break
 		finally:
 			print('Waiting for new clients ....')
 	
+	# close communications
 	sock.close()
 	print('all connections killed')
 
@@ -190,7 +186,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-	__version__='0.1.3'
+	__version__='0.2.5'
 
 	parser = argparse.ArgumentParser(description='TCP server for receiving inputs from 3D mouse client')
 

@@ -35,16 +35,12 @@ def handShake(ssock, strlength):
 		test_msg=randomString(strlength)
 		dcdr.update(test_msg)
 		print(test_msg)
-		# ckSum=sum(bytearray(dcdr.digest()))
-		# chSum_msg=('{:<8}').format(str(ckSum))
+		
 		chSum=dcdr.hexdigest()
 		msg_len=('{:<'+str(HEADERSIZE)+'}').format(str(sys.getsizeof(test_msg)))
 		ssock.sendall(msg_len.encode('utf-8')+(test_msg).encode('utf-8')+chSum.encode('utf-8')+endMSG.encode('utf-8'))
 		t_time=time.time()
 		msg_full=''
-		# dataT=ssock.recv(4)
-		# msg_len=int(dataT.decode('utf-8'))
-		# print('msg length: %s' %msg_len)
 		while(True):
 			dataT=ssock.recv(4)
 			msg_full+=dataT
@@ -71,6 +67,7 @@ def main(args):
 
 	sock.connect(server_address)
 
+	# check communication robustness with a hand-shake protocol
 	is_connected=handShake(sock,10)
 
 	# define a header size of the message
@@ -91,25 +88,36 @@ def main(args):
 	# The number of polls needed to be done before the device is considered "static"
 	static_count_threshold=30
 
+	# launch space navigator
 	spnav.spnav_open()
-
-	startTime=time.time()
 
 	counter=0
 	publish=False
 	zero_counter=0
 
+	raw_input("Press Enter to continue ... ")
+
+	startTime=time.time()
+
 	while(True):
-		try: 
+		try:
+			# set an event object for handling the events of space navigator
 			event=spnav.spnav_poll_event()
+
+			# initialize hash key encryption
 			dcdr=hashlib.md5()
+
+			#initialize the messages
 			msg_tr=[0.0,0.0,0.0]
 			msg_rot=[0.0,0.0,0.0]
+
 			if event is not None:
+				# if there is an event (motion occurs), retrieve the data, normalize them and set the publish flag to True
 				msg_tr=[event.translation[2]/full_scale, -event.translation[0]/full_scale, event.translation[1]/full_scale]
 				msg_rot=[event.rotation[2]/full_scale, -event.rotation[0]/full_scale, event.rotation[1]/full_scale]
 				publish=True
 			else:
+				# if there is no event (no motion), wait until a threshold to publish and sleep for 1 ms
 				if zero_counter>static_count_threshold:
 					publish=True
 					zero_counter=0
@@ -117,23 +125,37 @@ def main(args):
 					zero_counter+=1
 				time.sleep(0.001)
 			if publish:
-				# data=json.dumps({"a": 'translation', "b": msg_tr, "c": 'rotation', "d": msg_rot})
+				# if the flag publish is True, compose and publish the message
+
+				# throwing the data in a json object
 				data=json.dumps({"translation": msg_tr, "rotation": msg_rot})
+
+				# create a hash key based on the message to be sent
 				dcdr.update(data)
 				chSum=dcdr.hexdigest()
 
+				# create header with the size of the message (it will be introduced before the message)
 				msg_len=('{:<'+str(HEADERSIZE)+'}').format(str(sys.getsizeof(data)))
-				msg_id=('{:<'+str(HEADERSIZE)+'}').format(str(counter))
-				sock.sendall(msg_idf.encode('utf-8')+msg_len.encode('utf-8')+(data).encode('utf-8')+chSum.encode('utf-8')+endMSG.encode('utf-8'))
-				# sock.sendall(msg_idf.encode('utf-8')+msg_len.encode('utf-8')+msg_id.encode('utf-8')+data.encode('utf-8'))
+				#msg_id=('{:<'+str(HEADERSIZE)+'}').format(str(counter))
 
+				# encode and send message
+				sock.sendall(msg_idf.encode('utf-8')+msg_len.encode('utf-8')+(data).encode('utf-8')+chSum.encode('utf-8')+endMSG.encode('utf-8'))
+
+				# time of the loop
 				time_passed=time.time()-startTime
+
+				# print message info
 				print('time ', time_passed, ', translation: ', msg_tr, 'msgID', counter)
+
+				# set the starting time of the next loop
 				startTime=time.time()
+
+				# increase counter and set publish flag to false (to avoid sending overpublishing)
 				counter+=1
 				publish=False
 
 		except KeyboardInterrupt:
+			# if Ctrl+C is pressed in the keyboard, send end-connection message and close the connection
 			print('closing socket')
 			sock.sendall(ec_id.encode('utf-8'))
 			sock.close()
@@ -141,13 +163,13 @@ def main(args):
 		# finally:
 
 
+	# shut down the space navigator
 	print('closing 3D mouse communication')
 	spnav.spnav_close()
-	# print('closing socket')
-	# sock.close()
+
 
 if __name__=="__main__":
-	__version__='0.1.3'
+	__version__='0.2.5'
 
 	parser = argparse.ArgumentParser(description='TCP server for receiving inputs from 3D mouse client')
 
