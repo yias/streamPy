@@ -93,7 +93,14 @@ def main(args):
 
 	counter=0
 	publish=False
+	filter_counter=0
+	valid_event_received=False
 	zero_counter=0
+
+	nb_msg_wailt=4
+
+	tr_msg_group=np.empty([nb_msg_wailt,3], dtype=float)
+
 
 	raw_input("Press Enter to continue ... ")
 
@@ -110,20 +117,33 @@ def main(args):
 			#initialize the messages
 			msg_tr=[0.0,0.0,0.0]
 			msg_rot=[0.0,0.0,0.0]
-
+			
 			if event is not None:
 				# if there is an event (motion occurs), retrieve the data, normalize them and set the publish flag to True
 				msg_tr=[event.translation[2]/full_scale, -event.translation[0]/full_scale, event.translation[1]/full_scale]
 				msg_rot=[event.rotation[2]/full_scale, -event.rotation[0]/full_scale, event.rotation[1]/full_scale]
-				publish=True
+				valid_event_received=True
+				# publish=True
 			else:
 				# if there is no event (no motion), wait until a threshold to publish and sleep for 1 ms
-				if zero_counter>static_count_threshold:
-					publish=True
+				if zero_counter>=static_count_threshold:
+					# publish=True
+					valid_event_received=True
 					zero_counter=0
 				else:
 					zero_counter+=1
 				time.sleep(0.001)
+			if valid_event_received:
+				tr_msg_group[filter_counter,0]=msg_tr[0]
+				tr_msg_group[filter_counter,1]=msg_tr[1]
+				tr_msg_group[filter_counter,2]=msg_tr[2]
+				valid_event_received=False
+				filter_counter+=1
+			if filter_counter>nb_msg_wailt-1:
+				tmp=np.mean(tr_msg_group, axis=0)
+				msg_tr=[tmp[0],tmp[1],tmp[2]]
+				publish=True
+				filter_counter=0
 			if publish:
 				# if the flag publish is True, compose and publish the message
 
