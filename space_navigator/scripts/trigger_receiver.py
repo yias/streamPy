@@ -14,8 +14,13 @@ import socket
 import time
 from datetime import datetime
 import json
+
+# import modules for creating a directory
 import os
 import errno
+
+# import files for parsing arguments
+import argparse
 
 class msg_receiver():
 	"""
@@ -86,6 +91,28 @@ class msg_receiver():
 
 if __name__ == '__main__':
 
-	msgHandler = msg_receiver()
+	__version__= '0.6.1'
+
+	parser = argparse.ArgumentParser(description='UDP server for receiving trigers from the remote robot')
+
+	parser.add_argument('--host', type=str, help= 'the IP of the server', default='localhost')
+
+	parser.add_argument('--port', type=int, help= 'the port on which the server is listening', default=9134)
+
+	parser.add_argument('--bufferSize', type=int, help= 'the buffer size of the message', default=4096)
+
+	parser.add_argument('--fileName', type=str, help= 'the name of the file to store the logs', default='logFile')
+
+	parser.add_argument('--directoryName', type=str, help= 'the name of the directory to save the logfile', default='logfiles')
+
+	parser.add_argument('--version', '-V', help='show program version', action='store_true')
+
+	args=parser.parse_args()
+
+	if args.version:
+		print('program verions: %s' % __version__)
+		exit()
+
+	msgHandler = msg_receiver(IPaddress = args.host, port = args.port, bufferSize = args.bufferSize, fileName = args.fileName, directoryName = args.directoryName)
 
 	msgHandler.run()

@@ -19,6 +19,9 @@ import socket
 import time
 import json
 
+# import files for parsing arguments
+import argparse
+
 class msg_sender():
 	"""
 
@@ -26,7 +29,7 @@ class msg_sender():
 
 	"""
 
-	def __init__(self, IPaddress='localhost', port=9134, nodeName = 'tcp_sender', topicName = 'trigger_debug'):
+	def __init__(self, IPaddress='localhost', port=9134, nodeName = 'udp_sender', topicName = 'trigger_debug'):
 
 		# initialize ros node
 		self.node_name = nodeName
@@ -71,7 +74,27 @@ class msg_sender():
 
 if __name__ == '__main__':
 
-	msgHandler = msg_sender()
+	__version__= '0.6.1'
+
+	parser = argparse.ArgumentParser(description='UDP server for receiving trigers from the remote robot')
+
+	parser.add_argument('--host', type=str, help= 'the IP of the server', default='localhost')
+
+	parser.add_argument('--port', type=int, help= 'the port on which the server is listening', default=9134)
+
+	parser.add_argument('--nodeName', type=str, help= 'the name of the ros node', default='udp_sender')
+
+	parser.add_argument('--topicName', type=str, help= 'the name of the ros-topic to listen', default='trigger_debug')
+
+	parser.add_argument('--version', '-V', help='show program version', action='store_true')
+
+	args=parser.parse_args()
+
+	if args.version:
+		print('program verions: %s' % __version__)
+		exit()
+
+	msgHandler = msg_sender(IPaddress = args.host , port = args.port, nodeName = args.nodeName, topicName = args.topicName)
 
 	msgHandler.run()
 
