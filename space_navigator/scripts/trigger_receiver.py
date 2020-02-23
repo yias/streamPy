@@ -14,6 +14,8 @@ import socket
 import time
 from datetime import datetime
 import json
+import os
+import errno
 
 class msg_receiver():
 	"""
@@ -22,7 +24,7 @@ class msg_receiver():
 
 	"""
 
-	def __init__(self, IPaddress='localhost', port=9134, bufferSize = 4096, fileName = 'logFile'):
+	def __init__(self, IPaddress='localhost', port=9134, bufferSize = 4096, fileName = 'logFile', directoryName = 'logfiles'):
 
 		# Create a UDP/IP socket
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -30,11 +32,20 @@ class msg_receiver():
 
 		self.buffer_size=bufferSize
 
+		# set currect date and time for the name of the logfile
 		nowT=datetime.now()
 
-		# open a txt file for storing the message
-		self.logfile = open("logfiles/" + fileName + "_" + nowT.strftime("%y%m%d_%H%M%S") + ".txt", "w")
+		# create a folder to store the logfiles if doesn't exists
+		try:
+			os.makedirs(directoryName)
+		except OSError as e:
+			if e.errno != errno.EEXIST:
+				raise
 
+		# open a txt file for storing the message
+		self.logfile = open(directoryName + "/" + fileName + "_" + nowT.strftime("%y%m%d_%H%M%S") + ".txt", "w")
+
+		# set program starting time
 		self.start_Time = time.time()
 
 		# bind the socket to a specific port of an IP address
@@ -60,12 +71,11 @@ class msg_receiver():
 
 				now = time.time() - self.start_Time
 
+				# print message data with timestamp
 				print('%f %d %d.%d' % (now, tgr, tgr_time[0], tgr_time[1]))
 
+				# store message data to the log file, including timestamp
 				self.logfile.write('%f %d %d.%d\n' % (now, tgr, tgr_time[0], tgr_time[1]))
-
-				# print('trigger: %s' %(msg_info.get("trigger")))
-				# print('trigger time: %s' %(msg_info.get("time")))
 			
 			except KeyboardInterrupt:
 				# with Cntl+C, close any socket communication and lodfiles
@@ -79,5 +89,3 @@ if __name__ == '__main__':
 	msgHandler = msg_receiver()
 
 	msgHandler.run()
-
-	# msgHandler.close_communication()
