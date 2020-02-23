@@ -1,3 +1,15 @@
+#!/usr/bin/env python
+"""
+	developer: Iason Batzianoulis
+	maintaner: Iason Batzianoulis
+	email: iasonbatz@gmail.com
+
+	description: 
+	This scripts creates a TCP/IP server for listening to inputs from a space navigator
+
+"""
+
+
 # import standard modules 
 import numpy as np
 import argparse
@@ -186,7 +198,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-	__version__='0.5.1'
+	__version__='0.6.1'
 
 	parser = argparse.ArgumentParser(description='TCP server for receiving inputs from 3D mouse client')
 
