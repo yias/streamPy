@@ -42,3 +42,9 @@ $ python tcp_server.py --host "the IP of the host"
 ```bash
 $ python tcp_mouse_client.py --host "the server IP"
 ```
+
+- running the trigger receiver
+```bash
+$ python trigger_receiver.py --host "the server IP"
+```
+
