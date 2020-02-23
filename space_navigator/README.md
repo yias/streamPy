@@ -43,8 +43,13 @@ $ python tcp_server.py --host "the IP of the host"
 $ python tcp_mouse_client.py --host "the server IP"
 ```
 
-## Running the ros_node
+## Running the ros-node for receiving the data from the spacemouse
 ```bash
 $ rosrun remote_spacenav tcp_server.py
+```
+
+## Running the ros-node for sending the trigger to the remote user
+```bash
+$ python trigger_sender.py --host "the server IP"
 ```
 
