@@ -199,7 +199,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-	__version__='0.7.1'
+	__version__='0.7.5'
 
 	parser = argparse.ArgumentParser(description='TCP server for receiving inputs from 3D mouse client')
 

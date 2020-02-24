@@ -117,6 +117,9 @@ def main(args):
 
 	startTime=time.time()
 
+	msg_btn = [0, 0]
+	bnt_flags = [False, False]
+
 	while(True):
 		try:
 			# set an event object for handling the events of space navigator
@@ -128,7 +131,8 @@ def main(args):
 			#initialize the messages
 			msg_tr = [0.0,0.0,0.0]
 			msg_rot = [0.0,0.0,0.0]
-			msg_btn = 0
+			
+			# bnt2_flag = 
 
 			
 			if event is not None:
@@ -140,10 +144,13 @@ def main(args):
 					valid_event_received=True
 					# publish=True
 				if event.ev_type == spnav.SPNAV_EVENT_BUTTON:
-					if event.bnum == 0: # right button
-						msg_btn = 1
-					else:
-						msg_btn = 2
+					print(event.press)
+
+					if event.press: # right button
+						bnt_flags[event.bnum] = True
+					if event.press == False:
+						bnt_flags[event.bnum] = False
+					msg_btn = [int(bnt_flags[0]), int(bnt_flags[1])]
 					publish = True
 			else:
 				# if there is no event (no motion), wait until a threshold to publish and sleep for 1 ms
@@ -186,7 +193,7 @@ def main(args):
 				time_passed=time.time()-startTime
 
 				# print message info
-				print('time ', time_passed, ', translation: ', msg_tr, 'msgID', counter)
+				# print('time ', time_passed, ', translation: ', msg_tr, 'msgID', counter)
 
 				# set the starting time of the next loop
 				startTime=time.time()
@@ -210,7 +217,7 @@ def main(args):
 
 
 if __name__=="__main__":
-	__version__='0.7.1'
+	__version__='0.7.5'
 
 	parser = argparse.ArgumentParser(description='TCP server for receiving inputs from 3D mouse client')
 
