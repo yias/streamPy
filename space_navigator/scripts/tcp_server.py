@@ -175,17 +175,20 @@ def main(args):
 						# if the message is valid, retrieve the data and load them into a json object
 						msg_data=json.loads(tr_msg.decode('utf-8'))
 
-						tr=msg_data.get("translation")
-						rot=msg_data.get("rotation")
-						print('translation: %s' %(msg_data.get("translation")))
-						print('rotation: %s' %(msg_data.get("rotation")))
+						tr = msg_data.get("translation")
+						rot = msg_data.get("rotation")
+						btn = msg_data.get("button")
+						# print('translation: %s' %(msg_data.get("translation")))
+						# print('rotation: %s' %(msg_data.get("rotation")))
+						# print('button: %s' %(msg_data.get("button")))
 						now=rospy.get_rostime()
 						joy_msg.header.stamp.secs=now.secs
 						joy_msg.header.stamp.nsecs=now.nsecs
 						for i in range(3):
 							joy_msg.axes.append(tr[i])
-						for i in range(3):
 							joy_msg.axes.append(rot[i])
+						for i in range(2):
+							joy_msg.buttons.append(btn[i])
 						spaceNav_pub.publish(joy_msg)
 
 
@@ -212,7 +215,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-	__version__='0.6.1'
+	__version__='0.7.5'
 
 	parser = argparse.ArgumentParser(description='TCP server for receiving inputs from 3D mouse client')
 
