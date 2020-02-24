@@ -126,15 +126,25 @@ def main(args):
 			dcdr=hashlib.md5()
 
 			#initialize the messages
-			msg_tr=[0.0,0.0,0.0]
-			msg_rot=[0.0,0.0,0.0]
+			msg_tr = [0.0,0.0,0.0]
+			msg_rot = [0.0,0.0,0.0]
+			msg_btn = 0
+
 			
 			if event is not None:
-				# if there is an event (motion occurs), retrieve the data, normalize them and set the publish flag to True
-				msg_tr=[event.translation[2]/full_scale, -event.translation[0]/full_scale, event.translation[1]/full_scale]
-				msg_rot=[event.rotation[2]/full_scale, -event.rotation[0]/full_scale, event.rotation[1]/full_scale]
-				valid_event_received=True
-				# publish=True
+				if event.ev_type == spnav.SPNAV_EVENT_MOTION:
+					# print(event.ev_type)
+					# if there is an event (motion occurs), retrieve the data, normalize them and set the publish flag to True
+					msg_tr=[event.translation[2]/full_scale, -event.translation[0]/full_scale, event.translation[1]/full_scale]
+					msg_rot=[event.rotation[2]/full_scale, -event.rotation[0]/full_scale, event.rotation[1]/full_scale]
+					valid_event_received=True
+					# publish=True
+				if event.ev_type == spnav.SPNAV_EVENT_BUTTON:
+					if event.bnum == 0: # right button
+						msg_btn = 1
+					else:
+						msg_btn = 2
+					publish = True
 			else:
 				# if there is no event (no motion), wait until a threshold to publish and sleep for 1 ms
 				if zero_counter>=static_count_threshold:
@@ -159,7 +169,7 @@ def main(args):
 				# if the flag publish is True, compose and publish the message
 
 				# throwing the data in a json object
-				data=json.dumps({"translation": msg_tr, "rotation": msg_rot})
+				data=json.dumps({"translation": msg_tr, "rotation": msg_rot, "button": msg_btn})
 
 				# create a hash key based on the message to be sent
 				dcdr.update(data)

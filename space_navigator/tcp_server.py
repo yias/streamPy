@@ -174,6 +174,7 @@ def main(args):
 
 						print('translation: %s' %(msg_data.get("translation")))
 						print('rotation: %s' %(msg_data.get("rotation")))
+						print('button: %s' %(msg_data.get("button")))
 
 				if  data.decode('utf-8')==ec_id:
 					# if end-of-communication identifier received, terminate the connection
