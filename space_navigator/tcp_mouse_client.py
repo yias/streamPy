@@ -144,7 +144,7 @@ def main(args):
 					valid_event_received=True
 					# publish=True
 				if event.ev_type == spnav.SPNAV_EVENT_BUTTON:
-					print(event.press)
+					# print(event.press)
 
 					if event.press: # right button
 						bnt_flags[event.bnum] = True
@@ -193,7 +193,7 @@ def main(args):
 				time_passed=time.time()-startTime
 
 				# print message info
-				# print('time ', time_passed, ', translation: ', msg_tr, 'msgID', counter)
+				print('time ', time_passed, ', translation: ', msg_tr, 'msgID', counter)
 
 				# set the starting time of the next loop
 				startTime=time.time()

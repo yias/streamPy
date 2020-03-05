@@ -97,8 +97,9 @@ class msg_receiver():
 				while(conCheck):
 
 					# receive data of a buffer size
-					print(self.buffer_size)
-					data, address = connection.recv(self.buffer_size)
+					# print(self.buffer_size)
+					data = connection.recv(4) #self.buffer_size
+					# print(data)
 
 					if data.decode('utf-8')==self.msg_idf:
 						# receive bytes until the full message is received
@@ -110,23 +111,24 @@ class msg_receiver():
 								break
 
 						# extract message
-						msg_validity, tr_msg = self.msgExtractor(full_msg,self.HEADERSIZE,self.endMSG)
+						# msg_validity, tr_msg = self.msgExtractor(full_msg,self.HEADERSIZE,self.endMSG)
+						# print(msg_validity)
 
-						if msg_validity:
+						# if msg_validity:
 
-							# retrieve message information 
-							msg_info = json.loads(tr_msg.decode('utf-8'))
+						# 	# retrieve message information 
+						msg_info = json.loads(full_msg[:-4].decode('utf-8'))
 
-							tgr = msg_info.get("trigger")
-							tgr_time = msg_info.get("time")
+						tgr = msg_info.get("trigger")
+						tgr_time = msg_info.get("time")
 
-							now = time.time() - self.start_Time
+						now = time.time() - self.start_Time
 
-							# print message data with timestamp
-							print('%f %d %d.%d' % (now, tgr, tgr_time[0], tgr_time[1]))
+						# print message data with timestamp
+						print('%f %d %d.%d' % (now, tgr, tgr_time[0], tgr_time[1]))
 
-							# store message data to the log file, including timestamp
-							self.logfile.write('%f %d %d.%d\n' % (now, tgr, tgr_time[0], tgr_time[1]))
+						# store message data to the log file, including timestamp
+						self.logfile.write('%f %d %d.%d\n' % (now, tgr, tgr_time[0], tgr_time[1]))
 
 					if  data.decode('utf-8')==self.ec_id:
 						# if end-of-communication identifier received, terminate the connection
@@ -134,7 +136,6 @@ class msg_receiver():
 						connection.close()
 						break
 
-			
 			except KeyboardInterrupt:
 				# with Cntl+C, close any socket communication and lodfiles
 				self.logfile.close()
@@ -142,6 +143,8 @@ class msg_receiver():
 					connection.close()
 				self.close_communication()
 				break
+			finally:
+				print('Waiting for new clients ....')
 
 	# def calc_checksum(s):
 	# return '%2X' % (-(sum(ord(c) for c in s) % 256) & 0xFF)
