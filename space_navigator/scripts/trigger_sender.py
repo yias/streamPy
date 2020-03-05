@@ -65,33 +65,31 @@ class msg_sender():
 
 		self.is_connected=False
 
+		self.msg_new=False
+
+		self.rate = rospy.Rate(100)
+
 		# initialize hash key encryption
 		self.dcdr=hashlib.md5()
 
 
 	def rosMsgCallback(self, rosmsg):
 		# callback function for listening to the topic and store the data to local variables
+		
 		self.msg_info = rosmsg.data;
 		print(self.msg_info)
 		self.time_received = rospy.get_rostime()
-		if(self.is_connected):
-			self.send_msg()
 
-	def send_msg(self):
+		if(self.is_connected):
+			self.send_msg(rosmsg.data)
+
+	def send_msg(self, msgT):
 
 		# create a json object and serialized it		
-		data=json.dumps({"trigger": self.msg_info, "time": [self.time_received.secs, self.time_received.nsecs]})
+		data=json.dumps({"trigger": msgT, "time": [self.time_received.secs, self.time_received.nsecs]})
 
-		self.dcdr.update(data)
-		chSum=self.dcdr.hexdigest()
+		self.sock.sendall(self.msg_idf.encode('utf-8')+(data).encode('utf-8')+self.endMSG.encode('utf-8'))
 
-		# create header with the size of the message (it will be introduced before the message)
-		msg_len=('{:<'+str(HEADERSIZE)+'}').format(str(sys.getsizeof(data)))
-
-		# encode and send message
-		self.sock.sendall(self.msg_idf.encode('utf-8')+msg_len.encode('utf-8')+(data).encode('utf-8')+chSum.encode('utf-8')+self.endMSG.encode('utf-8'))
-
-		self.sock.sendto(data.encode('utf-8'), self.server_address)
 
 	def close_communication(self):
 
@@ -109,8 +107,10 @@ class msg_sender():
 		# check communication robustness with a hand-shake protocol
 		self.is_connected=self.handShake(self.sock,10)
 
+		counter=0;
 		while not rospy.is_shutdown():
 			rospy.spin()
+
 
 	def randomString(self, strlength=10):
 		letters=string.ascii_lowercase
@@ -128,7 +128,7 @@ class msg_sender():
 			dcdr=hashlib.md5()
 			test_msg=self.randomString(strlength)
 			dcdr.update(test_msg)
-			print(test_msg)
+			# print(test_msg)
 			
 			chSum=dcdr.hexdigest()
 			msg_len=('{:<'+str(HEADERSIZE)+'}').format(str(sys.getsizeof(test_msg)))
