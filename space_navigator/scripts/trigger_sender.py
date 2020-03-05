@@ -52,6 +52,7 @@ class msg_sender():
 	def rosMsgCallback(self, rosmsg):
 		# callback function for listening to the topic and store the data to local variables
 		self.msg_info = rosmsg.data;
+		print(self.msg_info)
 		self.time_received = rospy.get_rostime()
 		self.send_msg()
 
