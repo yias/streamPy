@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+"""
+	developer: Iason Batzianoulis
+	maintaner: Iason Batzianoulis
+	email: iasonbatz@gmail.com
+
+	description: 
+	This scripts creates a TCP/IP client for streaming the inputs of a space navigator
+
+"""
+
 # import standard modules 
 import numpy as np
 import argparse
@@ -93,11 +104,21 @@ def main(args):
 
 	counter=0
 	publish=False
+	filter_counter=0
+	valid_event_received=False
 	zero_counter=0
+
+	nb_msg_wailt=4
+
+	tr_msg_group=np.empty([nb_msg_wailt,3], dtype=float)
+
 
 	raw_input("Press Enter to continue ... ")
 
 	startTime=time.time()
+
+	msg_btn = [0, 0]
+	bnt_flags = [False, False]
 
 	while(True):
 		try:
@@ -108,27 +129,54 @@ def main(args):
 			dcdr=hashlib.md5()
 
 			#initialize the messages
-			msg_tr=[0.0,0.0,0.0]
-			msg_rot=[0.0,0.0,0.0]
+			msg_tr = [0.0,0.0,0.0]
+			msg_rot = [0.0,0.0,0.0]
+			
+			# bnt2_flag = 
 
+			
 			if event is not None:
-				# if there is an event (motion occurs), retrieve the data, normalize them and set the publish flag to True
-				msg_tr=[event.translation[2]/full_scale, -event.translation[0]/full_scale, event.translation[1]/full_scale]
-				msg_rot=[event.rotation[2]/full_scale, -event.rotation[0]/full_scale, event.rotation[1]/full_scale]
-				publish=True
+				if event.ev_type == spnav.SPNAV_EVENT_MOTION:
+					# print(event.ev_type)
+					# if there is an event (motion occurs), retrieve the data, normalize them and set the publish flag to True
+					msg_tr=[event.translation[2]/full_scale, -event.translation[0]/full_scale, event.translation[1]/full_scale]
+					msg_rot=[event.rotation[2]/full_scale, -event.rotation[0]/full_scale, event.rotation[1]/full_scale]
+					valid_event_received=True
+					# publish=True
+				if event.ev_type == spnav.SPNAV_EVENT_BUTTON:
+					print(event.press)
+
+					if event.press: # right button
+						bnt_flags[event.bnum] = True
+					if event.press == False:
+						bnt_flags[event.bnum] = False
+					msg_btn = [int(bnt_flags[0]), int(bnt_flags[1])]
+					publish = True
 			else:
 				# if there is no event (no motion), wait until a threshold to publish and sleep for 1 ms
-				if zero_counter>static_count_threshold:
-					publish=True
+				if zero_counter>=static_count_threshold:
+					# publish=True
+					valid_event_received=True
 					zero_counter=0
 				else:
 					zero_counter+=1
 				time.sleep(0.001)
+			if valid_event_received:
+				tr_msg_group[filter_counter,0]=msg_tr[0]
+				tr_msg_group[filter_counter,1]=msg_tr[1]
+				tr_msg_group[filter_counter,2]=msg_tr[2]
+				valid_event_received=False
+				filter_counter+=1
+			if filter_counter>nb_msg_wailt-1:
+				tmp=np.mean(tr_msg_group, axis=0)
+				msg_tr=[tmp[0],tmp[1],tmp[2]]
+				publish=True
+				filter_counter=0
 			if publish:
 				# if the flag publish is True, compose and publish the message
 
 				# throwing the data in a json object
-				data=json.dumps({"translation": msg_tr, "rotation": msg_rot})
+				data=json.dumps({"translation": msg_tr, "rotation": msg_rot, "button": msg_btn})
 
 				# create a hash key based on the message to be sent
 				dcdr.update(data)
@@ -145,7 +193,7 @@ def main(args):
 				time_passed=time.time()-startTime
 
 				# print message info
-				print('time ', time_passed, ', translation: ', msg_tr, 'msgID', counter)
+				# print('time ', time_passed, ', translation: ', msg_tr, 'msgID', counter)
 
 				# set the starting time of the next loop
 				startTime=time.time()
@@ -169,7 +217,7 @@ def main(args):
 
 
 if __name__=="__main__":
-	__version__='0.6.1'
+	__version__='0.7.5'
 
 	parser = argparse.ArgumentParser(description='TCP server for receiving inputs from 3D mouse client')
 

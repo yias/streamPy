@@ -18,9 +18,15 @@ from std_msgs.msg import Int8
 import socket
 import time
 import json
+import hashlib
+import sys
+
+import numpy as np
 
 # import files for parsing arguments
 import argparse
+import random
+import string
 
 class msg_sender():
 	"""
@@ -29,7 +35,7 @@ class msg_sender():
 
 	"""
 
-	def __init__(self, IPaddress='localhost', port=9134, nodeName = 'udp_sender', topicName = 'trigger_debug'):
+	def __init__(self, IPaddress='localhost', port=9134, nodeName = 'trigger_sender', topicName = 'trigger_debug'):
 
 		# initialize ros node
 		self.node_name = nodeName
@@ -40,37 +46,104 @@ class msg_sender():
 		self.listener = rospy.Subscriber(self.topic_Name, Int8, self.rosMsgCallback)
 
 		# Create a UDP/IP socket
-		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 		# Bind the socket to the port
 		self.server_address = (IPaddress, port)
 
-		print('starting up a UDP/IP connection on %s port %s' % self.server_address)
+		# define a header size of the message
+		self.HEADERSIZE=8
 
-		# self.sock.bind(self.server_address)
+		# new message identifier
+		self.msg_idf="!&?5"
+
+		# end-of-message identifier
+		self.endMSG="!3tt"
+
+		# end-connection identifier
+		self.ec_id="\ne@c"
+
+		self.is_connected=False
+
+		# initialize hash key encryption
+		self.dcdr=hashlib.md5()
+
 
 	def rosMsgCallback(self, rosmsg):
 		# callback function for listening to the topic and store the data to local variables
 		self.msg_info = rosmsg.data;
 		print(self.msg_info)
 		self.time_received = rospy.get_rostime()
-		self.send_msg()
+		if(self.is_connected):
+			self.send_msg()
 
 	def send_msg(self):
-		
+
 		# create a json object and serialized it		
 		data=json.dumps({"trigger": self.msg_info, "time": [self.time_received.secs, self.time_received.nsecs]})
+
+		self.dcdr.update(data)
+		chSum=self.dcdr.hexdigest()
+
+		# create header with the size of the message (it will be introduced before the message)
+		msg_len=('{:<'+str(HEADERSIZE)+'}').format(str(sys.getsizeof(data)))
+
+		# encode and send message
+		self.sock.sendall(self.msg_idf.encode('utf-8')+msg_len.encode('utf-8')+(data).encode('utf-8')+chSum.encode('utf-8')+self.endMSG.encode('utf-8'))
 
 		self.sock.sendto(data.encode('utf-8'), self.server_address)
 
 	def close_communication(self):
+
+		print('closing socket')
+		self.sock.sendall(self.ec_id.encode('utf-8'))
 		self.sock.close()
 		print('connection terminated')
 
 	def run(self):
 
+		print('starting up a TCP/IP connection on %s port %s' % self.server_address)
+
+		self.sock.connect(self.server_address)
+
+		# check communication robustness with a hand-shake protocol
+		self.is_connected=self.handShake(self.sock,10)
+
 		while not rospy.is_shutdown():
 			rospy.spin()
+
+	def randomString(self, strlength=10):
+		letters=string.ascii_lowercase
+		return ''.join(random.choice(letters) for i in range(strlength))
+
+
+	def handShake(self, ssock, strlength):
+
+		ping_times=np.empty([10,1], dtype=np.float64)
+		endMSG="!3tt"
+		HEADERSIZE=4
+
+		# echo server 10 times
+		for i in range(10):
+			dcdr=hashlib.md5()
+			test_msg=self.randomString(strlength)
+			dcdr.update(test_msg)
+			print(test_msg)
+			
+			chSum=dcdr.hexdigest()
+			msg_len=('{:<'+str(HEADERSIZE)+'}').format(str(sys.getsizeof(test_msg)))
+			ssock.sendall(msg_len.encode('utf-8')+(test_msg).encode('utf-8')+chSum.encode('utf-8')+endMSG.encode('utf-8'))
+			t_time=time.time()
+			msg_full=''
+			while(True):
+				dataT=ssock.recv(4)
+				msg_full+=dataT
+				if msg_full[-4:].decode('utf-8')==endMSG:
+					break
+			# print(msg_full.decode('utf-8'))
+
+
+		return True
 
 
 if __name__ == '__main__':
@@ -81,7 +154,7 @@ if __name__ == '__main__':
 
 	parser.add_argument('--host', type=str, help= 'the IP of the server', default='localhost')
 
-	parser.add_argument('--port', type=int, help= 'the port on which the server is listening', default=9134)
+	parser.add_argument('--port', type=int, help= 'the port on which the server is listening', default=9135)
 
 	parser.add_argument('--nodeName', type=str, help= 'the name of the ros node', default='udp_sender')
 
