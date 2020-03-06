@@ -188,10 +188,7 @@ def main(args):
 						btn = msg_data.get("button")
 						rbt_cmd = msg_data.get("command")
 						errp_weight = msg_data.get("weight")
-						# print('translation: %s' %(msg_data.get("translation")))
-						# print('rotation: %s' %(msg_data.get("rotation")))
-						# print('button: %s' %(msg_data.get("button")))
-
+						
 						cmd_data.data = rbt_cmd
 						rbt_cmd_pub.publish(cmd_data)
 
