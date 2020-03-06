@@ -19,6 +19,8 @@ import time
 # import ros modules
 import rospy
 from sensor_msgs.msg import Joy
+from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32
 
 
 def calc_checksum(s):
@@ -132,6 +134,8 @@ def main(args):
 
 	# define ros publisher
 	spaceNav_pub=rospy.Publisher('spacenav/joy', Joy, queue_size=2)
+	rbt_cmd_pub=rospy.Publisher('/spacenav/direction', Float32MultiArray, queue_size=2)
+	eeg_pub=rospy.Publisher('/eeg/weight', Float32, queue_size=2)
 
 	# start the node
 	rospy.init_node('remoteSpaceNav')
@@ -154,6 +158,10 @@ def main(args):
 			while(conCheck):
 				# define ros message
 				joy_msg=Joy()
+				cmd_data = Float32MultiArray()
+				cmd_data.data = []
+				errp_data = Float32()
+
 
 				# retrieve the message identifier. once it is received, compose the message
 				data=connection.recv(BUFFER_SIZE)
@@ -178,9 +186,18 @@ def main(args):
 						tr = msg_data.get("translation")
 						rot = msg_data.get("rotation")
 						btn = msg_data.get("button")
+						rbt_cmd = msg_data.get("command")
+						errp_weight = msg_data.get("weight")
 						# print('translation: %s' %(msg_data.get("translation")))
 						# print('rotation: %s' %(msg_data.get("rotation")))
 						# print('button: %s' %(msg_data.get("button")))
+
+						cmd_data.data = rbt_cmd
+						rbt_cmd_pub.publish(cmd_data)
+
+						errp_data.data=errp_weight
+						eeg_pub.publish(errp_data)
+
 						now=rospy.get_rostime()
 						joy_msg.header.stamp.secs=now.secs
 						joy_msg.header.stamp.nsecs=now.nsecs
