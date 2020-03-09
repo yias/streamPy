@@ -82,7 +82,7 @@ def computeTriggerValue(mouseInput, previousTrigger = 0):
 		y_dir = -1.0
 	if (mouseInput[2] > threshold):
 		z_dir = 1.0
-	if (mouseInput < -1*threshold):
+	if (mouseInput[2] < -1*threshold):
 		z_dir = -1.0
 
 	output = [x_dir, y_dir, z_dir]

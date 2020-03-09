@@ -75,7 +75,7 @@ class msg_receiver():
 		self.start_Time = time.time()
 
 		# bind the socket to a specific port of an IP address
-		self.sock.bind(self.server_address)
+		# self.sock.bind(self.server_address)
 		print('------------- waiting to receive message -------------')
 
 	def close_communication(self):
@@ -85,66 +85,80 @@ class msg_receiver():
 	def run(self):
 
 		# listen for new connections
-		self.sock.listen(6)
-		connection_exist=False
+		# self.sock.listen(6)
+		# connection_exist=False
 
-		while (True):
-			try:
-				connection, client_address = self.sock.accept()
-				connection_exist=True;
+		self.sock.connect(self.server_address)
 
-				conCheck=self.handShake(connection,10)
-				while(conCheck):
+		# conCheck=self.handShake(self.sock,10)
+		# print(conCheck)
 
-					# receive data of a buffer size
-					# print(self.buffer_size)
-					data = connection.recv(4) #self.buffer_size
-					# print(data)
+		connection_exist = True
 
-					if data.decode('utf-8')==self.msg_idf:
-						# receive bytes until the full message is received
-						full_msg='';
-						while (True):
-							dataT=connection.recv(1)
-							full_msg+=dataT
-							if full_msg[-4:].decode('utf-8')==self.endMSG:
-								break
+		# while(True):
+		# 	print('test')
+		# 	data = self.sock.recv(self.buffer_size)
+		# 	print(data)
 
-						# extract message
-						# msg_validity, tr_msg = self.msgExtractor(full_msg,self.HEADERSIZE,self.endMSG)
-						# print(msg_validity)
+		# while (conCheck):
+		# 	try:
+		# 		# connection, client_address = self.sock.accept()
+		# 		# connection_exist=True;
 
-						# if msg_validity:
+		# 		# conCheck=self.handShake(connection,10)
+		counter = 0
+		try:
+			while(True):
+				# print (counter)
+				counter +=1
+				# receive data of a buffer size
+				# print(self.buffer_size)
+				data = self.sock.recv(self.buffer_size)
+				# print(data)
+				# connection_exist = True
 
-						# 	# retrieve message information 
-						msg_info = json.loads(full_msg[:-4].decode('utf-8'))
+				if data.decode('utf-8')==self.msg_idf:
+					# receive bytes until the full message is received
+					full_msg='';
+					while (True):
+						dataT=self.sock.recv(1)
+						full_msg+=dataT
+						if full_msg[-4:].decode('utf-8')==self.endMSG:
+							break
 
-						tgr = msg_info.get("trigger")
-						tgr_time = msg_info.get("time")
+					# # extract message
+					# msg_validity, tr_msg = self.msgExtractor(full_msg,self.HEADERSIZE,self.endMSG)
 
-						now = time.time() - self.start_Time
+					# if msg_validity:
 
-						# print message data with timestamp
-						print('%f %d %d.%d' % (now, tgr, tgr_time[0], tgr_time[1]))
+					# retrieve message information 
+					msg_info = json.loads(full_msg[:-4].decode('utf-8'))
 
-						# store message data to the log file, including timestamp
-						self.logfile.write('%f %d %d.%d\n' % (now, tgr, tgr_time[0], tgr_time[1]))
+					tgr = msg_info.get("trigger")
+					tgr_time = msg_info.get("time")
 
-					if  data.decode('utf-8')==self.ec_id:
-						# if end-of-communication identifier received, terminate the connection
-						print('Connection terminated by client ', client_address)
-						connection.close()
-						break
+					now = time.time() - self.start_Time
 
-			except KeyboardInterrupt:
-				# with Cntl+C, close any socket communication and lodfiles
-				self.logfile.close()
-				if(connection_exist):
-					connection.close()
-				self.close_communication()
-				break
-			finally:
-				print('Waiting for new clients ....')
+					# print message data with timestamp
+					print('%f %d %d.%d' % (now, tgr, tgr_time[0], tgr_time[1]))
+
+					# store message data to the log file, including timestamp
+					self.logfile.write('%f %d %d.%d\n' % (now, tgr, tgr_time[0], tgr_time[1]))
+
+				if  data.decode('utf-8')==self.ec_id:
+					# if end-of-communication identifier received, terminate the connection
+					print('Connection terminated by client ', client_address)
+					self.sock.close()
+					self.logfile.close()
+
+		except KeyboardInterrupt:
+			# with Cntl+C, close any socket communication and lodfiles
+			self.logfile.close()
+			if(connection_exist):
+				self.sock.close()
+			self.close_communication()
+			# break
+
 
 	# def calc_checksum(s):
 	# return '%2X' % (-(sum(ord(c) for c in s) % 256) & 0xFF)
@@ -172,45 +186,68 @@ class msg_receiver():
 
 	def handShake(self, conn, strlength):
 
+		# ping_times=np.empty([10,1], dtype=np.float64)
+		# compute_times=np.empty([10,1], dtype=np.float64)
+		# validity_counter=np.empty([10,1], dtype=bool)
+		# endMSG="!3tt"
+		# HEADERSIZE=4
+		# t_time0=0.0
+
+		# # receive and send random msgs to the client 10 times
+		# for i in range(10):
+		# 	msg_full=''
+		# 	while (True):
+		# 		dataT=conn.recv(4)
+		# 		msg_full+=dataT
+		# 		if msg_full[-4:].decode('utf-8')==endMSG:
+		# 			break
+
+		# 	if t_time0!=0.0:
+		# 		ping_times[i-1]=time.time()-t_time0
+		# 	t_time=time.time()
+		# 	msg_validity, tr_msg = self.msgExtractor(msg_full,HEADERSIZE,endMSG)
+		# 	validity_counter[i]=msg_validity
+
+		# 	dcdr=hashlib.md5()
+		# 	test_msg=self.randomString(strlength)
+		# 	dcdr.update(test_msg)
+		# 	chSum=dcdr.hexdigest()
+		# 	msg_len=('{:<'+str(HEADERSIZE)+'}').format(str(sys.getsizeof(test_msg)))
+		# 	compute_times[i]=time.time()-t_time
+		# 	conn.sendall(msg_len.encode('utf-8')+(test_msg).encode('utf-8')+chSum.encode('utf-8')+endMSG.encode('utf-8'))
+		# 	t_time0=time.time()
+
+		# if((1*(validity_counter)).mean()>0.8):
+		# 	print('valid communication established')
+		# 	print('compute times: %s %s %s s' %(compute_times.mean(), u'\u00b1', compute_times.std()))
+		# 	print('ping times:  %s %s %s s' %(ping_times[:9].mean(), u'\u00b1', ping_times[:9].std()))
+		# 	return True
+		# else:
+		# 	print('communication is not valid')
+		# 	return False
+
 		ping_times=np.empty([10,1], dtype=np.float64)
-		compute_times=np.empty([10,1], dtype=np.float64)
-		validity_counter=np.empty([10,1], dtype=bool)
 		endMSG="!3tt"
 		HEADERSIZE=4
-		t_time0=0.0
 
-		# receive and send random msgs to the client 10 times
+		# echo server 10 times
 		for i in range(10):
-			msg_full=''
-			while (True):
-				dataT=conn.recv(4)
-				msg_full+=dataT
-				if msg_full[-4:].decode('utf-8')==endMSG:
-					break
-
-			if t_time0!=0.0:
-				ping_times[i-1]=time.time()-t_time0
-			t_time=time.time()
-			msg_validity, tr_msg = self.msgExtractor(msg_full,HEADERSIZE,endMSG)
-			validity_counter[i]=msg_validity
-
 			dcdr=hashlib.md5()
 			test_msg=self.randomString(strlength)
 			dcdr.update(test_msg)
+			# print(test_msg)
+			
 			chSum=dcdr.hexdigest()
 			msg_len=('{:<'+str(HEADERSIZE)+'}').format(str(sys.getsizeof(test_msg)))
-			compute_times[i]=time.time()-t_time
-			conn.sendall(msg_len.encode('utf-8')+(test_msg).encode('utf-8')+chSum.encode('utf-8')+endMSG.encode('utf-8'))
-			t_time0=time.time()
-
-		if((1*(validity_counter)).mean()>0.8):
-			print('valid communication established')
-			print('compute times: %s %s %s s' %(compute_times.mean(), u'\u00b1', compute_times.std()))
-			print('ping times:  %s %s %s s' %(ping_times[:9].mean(), u'\u00b1', ping_times[:9].std()))
-			return True
-		else:
-			print('communication is not valid')
-			return False
+			self.sock.sendall(msg_len.encode('utf-8')+(test_msg).encode('utf-8')+chSum.encode('utf-8')+endMSG.encode('utf-8'))
+			t_time=time.time()
+			msg_full=''
+			while(True):
+				dataT=self.sock.recv(4)
+				msg_full+=dataT
+				if msg_full[-4:].decode('utf-8')==endMSG:
+					break
+			# print(msg_full.decode('utf-8'))
 
 
 if __name__ == '__main__':
