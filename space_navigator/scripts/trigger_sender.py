@@ -39,12 +39,9 @@ class msg_sender():
 
 		# initialize ros node
 		self.node_name = nodeName
-		rospy.init_node(self.node_name, anonymous=True)
+		
 
-		# initialize subscriber
-		self.topic_Name = topicName
-		self.listener = rospy.Subscriber(self.topic_Name, Int8, self.rosMsgCallback)
-
+		
 		# Create a TDP/IP socket
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -67,7 +64,8 @@ class msg_sender():
 
 		self.msg_new=False
 
-		self.rate = rospy.Rate(100)
+		self.msg_info =0
+		
 
 		# initialize hash key encryption
 		self.dcdr=hashlib.md5()
@@ -83,6 +81,10 @@ class msg_sender():
 		self.msg_info = rosmsg.data;
 		print(self.msg_info)
 		self.time_received = rospy.get_rostime()
+		# self.send_msg(rosmsg.data)
+		# data=json.dumps({"trigger": rosmsg.data, "time": [self.time_received.secs, self.time_received.nsecs]})
+
+		# self.connection.sendall('1s')
 
 		if(self.is_connected):
 			self.send_msg(rosmsg.data)
@@ -92,13 +94,13 @@ class msg_sender():
 		# create a json object and serialized it		
 		data=json.dumps({"trigger": msgT, "time": [self.time_received.secs, self.time_received.nsecs]})
 
-		self.sock.sendall(self.msg_idf.encode('utf-8')+(data).encode('utf-8')+self.endMSG.encode('utf-8'))
-
+		# self.sock.sendall(self.msg_idf.encode('utf-8')+(data).encode('utf-8')+self.endMSG.encode('utf-8'))
+		self.connection.sendall(self.msg_idf.encode('utf-8')+(data).encode('utf-8')+self.endMSG.encode('utf-8'))
 
 	def close_communication(self):
 
 		print('closing socket')
-		self.sock.sendall(self.ec_id.encode('utf-8'))
+		# self.sock.sendall(self.ec_id.encode('utf-8'))
 		self.sock.close()
 		print('connection terminated')
 
@@ -114,30 +116,29 @@ class msg_sender():
 
 		connection_exist = False
 
-		while(True):
-			try:
-				connection, client_address = self.sock.accept()
+		self.connection, client_address = self.sock.accept()
 
-				connection_exist=True;
 
-				# conCheck=self.handShake(connection,10)
-				if(connection_exist):
-					break
-			except KeyboardInterrupt:
-				if(connection_exist):
-					connection.close()
-				self.connection_exist=False
-				break
-			finally:
-				print('Waiting for new clients ....')
 
-		# check communication robustness with a hand-shake protocol
-		# self.is_connected=self.handShake(self.sock,10)
+		self.is_connected =True
+
+		rospy.init_node(self.node_name, anonymous=True)
+
+		# initialize subscriber
+		self.topic_Name = 'trigger_debug'
+		self.listener = rospy.Subscriber(self.topic_Name, Int8, self.rosMsgCallback)
+		self.rate = rospy.Rate(10)
+
 		print("connection establised")
 		counter=0;
-		if(connection_exist):
-			while not rospy.is_shutdown():
-				rospy.spin()
+		while not rospy.is_shutdown():
+			# print(counter)
+			# self.send_msg(self.msg_info)
+			# counter+=1
+			self.rate.sleep()
+			rospy.spin()
+
+		self.sock.close()
 
 
 	def randomString(self, strlength=10):

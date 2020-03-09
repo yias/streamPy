@@ -95,6 +95,11 @@ class msg_receiver():
 
 		connection_exist = True
 
+		# while(True):
+		# 	print('test')
+		# 	data = self.sock.recv(self.buffer_size)
+		# 	print(data)
+
 		# while (conCheck):
 		# 	try:
 		# 		# connection, client_address = self.sock.accept()
@@ -103,41 +108,42 @@ class msg_receiver():
 		# 		# conCheck=self.handShake(connection,10)
 		counter = 0
 		try:
-			while(connection_exist):
-				print (counter)
+			while(True):
+				# print (counter)
 				counter +=1
 				# receive data of a buffer size
 				# print(self.buffer_size)
 				data = self.sock.recv(self.buffer_size)
+				print(data)
 				# connection_exist = True
 
 				if data.decode('utf-8')==self.msg_idf:
 					# receive bytes until the full message is received
 					full_msg='';
 					while (True):
-						dataT=connection.recv(1)
+						dataT=self.sock.recv(1)
 						full_msg+=dataT
 						if full_msg[-4:].decode('utf-8')==self.endMSG:
 							break
 
-					# extract message
-					msg_validity, tr_msg = self.msgExtractor(full_msg,self.HEADERSIZE,self.endMSG)
+					# # extract message
+					# msg_validity, tr_msg = self.msgExtractor(full_msg,self.HEADERSIZE,self.endMSG)
 
-					if msg_validity:
+					# if msg_validity:
 
-						# retrieve message information 
-						msg_info = json.loads(tr_msg.decode('utf-8'))
+					# retrieve message information 
+					msg_info = json.loads(full_msg[:-4].decode('utf-8'))
 
-						tgr = msg_info.get("trigger")
-						tgr_time = msg_info.get("time")
+					tgr = msg_info.get("trigger")
+					tgr_time = msg_info.get("time")
 
-						now = time.time() - self.start_Time
+					now = time.time() - self.start_Time
 
-						# print message data with timestamp
-						print('%f %d %d.%d' % (now, tgr, tgr_time[0], tgr_time[1]))
+					# print message data with timestamp
+					print('%f %d %d.%d' % (now, tgr, tgr_time[0], tgr_time[1]))
 
-						# store message data to the log file, including timestamp
-						self.logfile.write('%f %d %d.%d\n' % (now, tgr, tgr_time[0], tgr_time[1]))
+					# store message data to the log file, including timestamp
+					self.logfile.write('%f %d %d.%d\n' % (now, tgr, tgr_time[0], tgr_time[1]))
 
 				if  data.decode('utf-8')==self.ec_id:
 					# if end-of-communication identifier received, terminate the connection
