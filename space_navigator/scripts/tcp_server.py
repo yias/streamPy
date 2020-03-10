@@ -20,7 +20,7 @@ import time
 import rospy
 from sensor_msgs.msg import Joy
 from std_msgs.msg import Float32MultiArray
-from std_msgs.msg import Float32
+from std_msgs.msg import String
 
 
 def calc_checksum(s):
@@ -135,7 +135,7 @@ def main(args):
 	# define ros publisher
 	spaceNav_pub=rospy.Publisher('spacenav/joy', Joy, queue_size=2)
 	rbt_cmd_pub=rospy.Publisher('/spacenav/direction', Float32MultiArray, queue_size=2)
-	eeg_pub=rospy.Publisher('/eeg/weight', Float32, queue_size=2)
+	eeg_pub=rospy.Publisher('/eeg_weight', String, queue_size=2)
 
 	# start the node
 	rospy.init_node('remoteSpaceNav')
@@ -160,7 +160,7 @@ def main(args):
 				joy_msg=Joy()
 				cmd_data = Float32MultiArray()
 				cmd_data.data = []
-				errp_data = Float32()
+				errp_data = String()
 
 
 				# retrieve the message identifier. once it is received, compose the message
@@ -192,8 +192,10 @@ def main(args):
 						cmd_data.data = rbt_cmd
 						rbt_cmd_pub.publish(cmd_data)
 
-						errp_data.data=errp_weight
-						eeg_pub.publish(errp_data)
+						errp_data=str(errp_weight)
+						if(errp_weight>0.0):
+							print("errp data ",errp_data)
+							eeg_pub.publish(errp_data)
 
 						now=rospy.get_rostime()
 						joy_msg.header.stamp.secs=now.secs
